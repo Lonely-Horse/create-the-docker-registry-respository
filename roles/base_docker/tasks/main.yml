@@ -1,0 +1,76 @@
+- name: install some app
+  package:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+    state: latest
+    update_cache: yes
+
+- name: enable keyrings file
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: 0775
+
+- name: get gpg
+  get_url:
+    url: "https://mirrors.aliyun.com/docker-ce/linux/{{ ansible_distribution | lower }}/gpg"
+    dest: /etc/apt/keyrings/docker.asc
+    mode: 0644
+  when: ansible_distribution in ["Debian", "Ubuntu"]
+
+- name: add docker
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://mirrors.aliyun.com/docker-ce/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+    update_cache: yes
+  when: ansible_distribution in ["Debian","Ubuntu"]
+
+- name: install docker directly from alpine repo (Alpine)
+  community.general.apk:
+    name: docker
+    state: present
+    update_cache: yes
+  when: ansible_distribution == "Alpine"
+
+- name: download some docker extra softword
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+      - python3-docker
+    state: latest
+  when: ansible_distribution in ["Debian","Ubuntu"]
+
+- name: install docker directly (Alpine)
+  community.general.apk:
+    name: 
+      - docker
+      - docker-cli-compose
+    state: present
+    update_cache: yes
+  when: ansible_distribution == "Alpine"
+
+- name: add a template about daemon.json file
+  template:
+    src: "{{ docker_daemon_file }}"
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart_docker
+
+- name: start the systemctl docker
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: add user to the docker group
+  user:
+    name: lonelyhorse
+    groups: docker
+    append: yes

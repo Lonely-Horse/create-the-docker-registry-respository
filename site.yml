@@ -1,0 +1,30 @@
+- hosts: all
+  become: true
+  pre_tasks:
+  - name: update the system in Debian
+    apt:
+        upgrade: dist
+        update_cache: yes
+    when: ansible_distribution in ["Debian","Ubuntu"]
+
+  - name: update the system in CentOS
+    dnf:
+        update: list
+        update_cache: yes
+    when: ansible_distribution in ["Rocky","CentOS","Fedora"]
+
+  - name: install updates (Alpine Linux)
+    tags: always
+    ansible.builtin.apk:
+      update_cache: yes
+    when: ansible_distribution == "Alpine"
+
+- hosts: all
+  become: true
+  roles:
+    - base_docker
+
+- hosts: workstation
+  become: true
+  roles:
+    - docker_repository

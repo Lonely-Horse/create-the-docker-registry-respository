@@ -1,0 +1,2 @@
+docker_daemon_file: docker_daemon.j2
+ser7_tailscale_ip: 100.87.250.21
